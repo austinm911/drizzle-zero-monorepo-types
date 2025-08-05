@@ -2,64 +2,116 @@
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Hono, and more.
 
-## Features
+## Issue
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Start** - SSR framework with TanStack Router
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Hono** - Lightweight, performant server framework
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Turborepo** - Optimized monorepo build system
+Zero types produced in a monorepo where the consuming workspace does not use `tsconfig.json#references` will lose type inference.
 
-## Getting Started
+For example observe the types produced by `apps/server/src/zero/queries.ts` and `apps/web/src/components/zero/queries.ts`. The `apps/web` imports from `apps/server` the schema, client mutators, and so forth.
 
-First, install the dependencies:
+But on the `apps/web`, notice how the types are missing.
 
-```bash
-bun install
-```
-## Database Setup
+```ts
+// apps/server/src/zero/types.ts
+import type { Zero } from "@rocicorp/zero";
+import type { Mutators } from "./client-mutators";
+import type { Schema } from "./schema.gen";
 
-This project uses PostgreSQL with Drizzle ORM.
-
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
-```bash
-bun db:push
+export { type Schema, schema } from "./schema.gen";
+export type ZeroClient = Zero<Schema, Mutators>;
 ```
 
+```ts
+import type { ZeroClient } from "@app/server/zero";
+import type { Row } from "@rocicorp/zero";
 
-Then, run the development server:
+export const queries = {
+ getPosts: (z: ZeroClient) => {
+  return z.query.posts;
+ },
+};
 
-```bash
-bun dev
+export type GetPosts = Row<ReturnType<typeof queries.getPosts>>;
+/**
+ * If `tsconfig.json` is not configured to reference the server workspace, the types are not available in the web app. They would appear as:
+type GetPosts = {   
+    id: {} | null;
+    title: {};
+    content: {};
+    authorId: {};
+    published: {} | null;
+    createdAt: {} | null;
+    updatedAt: {} | null;
+}
+ */
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+When this is expected
 
+```ts
+import type { Row } from "@rocicorp/zero";
+import type { ZeroClient } from "./types";
 
+export const queries = {
+ getPosts: (z: ZeroClient) => {
+  return z.query.posts;
+ },
+};
 
-## Project Structure
-
+export type GetPosts = Row<ReturnType<typeof queries.getPosts>>;
+/**
+type GetPosts = {
+    id: number | null;
+    title: string;
+    content: string;
+    authorId: string;
+    published: boolean | null;
+    createdAt: number | null;
+    updatedAt: number | null;
+};
 ```
-drizzle-zero-monorepo-types/
-├── apps/
-│   ├── web/         # Frontend application (React + TanStack Start)
-│   └── server/      # Backend API (Hono)
+
+This can be fixed with a `tsconfig` in `apps/web` like as follows
+
+```ts
+{
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client"
+    ],
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    /* Linting */
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  // If this is commented/removed, the Zero Schema types are not available in the web app
+  "references": [{
+    "path": "../server"
+  }]
+}
 ```
-
-## Available Scripts
-
-- `bun dev`: Start all applications in development mode
-- `bun build`: Build all applications
-- `bun dev:web`: Start only the web application
-- `bun dev:server`: Start only the server
-- `bun check-types`: Check TypeScript types across all apps
-- `bun db:push`: Push schema changes to database
-- `bun db:studio`: Open database studio UI
