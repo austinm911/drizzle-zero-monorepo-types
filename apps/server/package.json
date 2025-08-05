@@ -1,0 +1,36 @@
+{
+	"name": "@app/server",
+	"main": "src/index.ts",
+	"type": "module",
+	"exports": {
+		"./*": "./src/*",
+		"./zero": "./src/zero/index.ts"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"check-types": "tsc -b",
+		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+		"dev": "bun run --hot src/index.ts",
+		"start": "bun run dist/index.js",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"zero:generate": "drizzle-zero generate -c src/zero/zero.config.ts -o src/zero/schema.gen.ts"
+	},
+	"dependencies": {
+		"dotenv": "^17.2.1",
+		"drizzle-orm": "^0.44.2",
+		"drizzle-zero": "^0.13.1",
+		"hono": "^4.8.2",
+		"pg": "^8.14.1",
+		"@rocicorp/zero": "catalog:",
+		"zod": "^4.0.2"
+	},
+	"devDependencies": {
+		"tsdown": "^0.12.9",
+		"@types/bun": "^1.2.6",
+		"drizzle-kit": "^0.31.2",
+		"@types/pg": "^8.11.11"
+	}
+}
