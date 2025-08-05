@@ -21,6 +21,7 @@ export type ZeroClient = Zero<Schema, Mutators>;
 ```
 
 ```ts
+// apps/web/src/components/zero/queries.ts
 import type { ZeroClient } from "@app/server/zero";
 import type { Row } from "@rocicorp/zero";
 
@@ -48,9 +49,6 @@ type GetPosts = {
 When this is expected
 
 ```ts
-import type { Row } from "@rocicorp/zero";
-import type { ZeroClient } from "./types";
-
 export const queries = {
  getPosts: (z: ZeroClient) => {
   return z.query.posts;
