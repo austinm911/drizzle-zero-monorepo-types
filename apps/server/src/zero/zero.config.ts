@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/performance/noNamespaceImport: ignore */
 
 import { drizzleZeroConfig } from "drizzle-zero";
-import * as drizzleSchema from "@/db/schema";
+import * as drizzleSchema from "../db/schema";
 
 export default drizzleZeroConfig(drizzleSchema, {
 	debug: true,
